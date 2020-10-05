@@ -121,7 +121,12 @@ class _homeState extends State<home> {
                   margin: EdgeInsets.all(10),
                   padding: EdgeInsets.all(100),
                   height: 170,
-                  width: 1000,
+                  width: 1000,// try this...
+                  //
+                  //MediaQuery.of(context).size.width,
+                  // or
+                  //MediaQuery.of(context).size.width-10,
+              //
                   alignment: Alignment.topCenter,
                   decoration: new BoxDecoration(
                       color: Colors.pinkAccent,
