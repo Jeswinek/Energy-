@@ -16,26 +16,26 @@ m=0
 
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(sensor,GPIO.IN)
+
 def fun():
    return Test()
 def fb(fire):
  t = fun()
  kdate = (t.date)
- ktime = (t.time) 
- print(ktime)
- print(kdate)
+ ktime = (t.time)
  kkey = kdate+ktime
  print(kkey)
  data_unit = {'Unit':fire,'date':kdate,'time':ktime}
 # db = firebase.database()
 # result = firebase.set('45')
  result = firebase.put('',kkey,fire)
+ print ("firebase updated")
  print(result)
 class Test:
  def __init__(self):
   now = datetime.datetime.now()
   self.date = now.strftime("%Y%m%d")
-  self.time = now.strftime("%S")
+  self.time = now.strftime("%M")
 
 
 def db(data):
@@ -57,6 +57,13 @@ def db(data):
 print ( "IR Sensor Ready....")
 print (" ")
 
+def process2():
+ 
+  starttime = time.time()
+  while True:
+   time.sleep(60.0 - ((time.time() - starttime) % 60.0))
+   p = multiprocessing.Process(name='p',target=firebase1) 
+   p.start()
 
 def metercount():
  k=0
@@ -81,15 +88,16 @@ def metercount():
         myconn = mysql.connector.connect(host = "localhost",user = "adminpi",passwd = "#aA12345678",database = "iemcs")
         db(data)
        # if int(data)%20==0:
-        p = multiprocessing.Process(name='p',target=firebase1)
-        p.start()
+       # p = multiprocessing.Process(name='p',target=firebase1)
+       # p.start()
        # data = int(data)+5
+
       while GPIO.input(sensor):
          time.sleep(0.1)
  except KeyboardInterrupt:
     GPIO.cleanup()
+
 def firebase1():
-  m=0
   k=1
   try:
     while k==1:
@@ -104,11 +112,12 @@ def firebase1():
       #  if x>z:
        #  if z%30==0:
         fb(z)
+        print ("firebase value:")
         print (z)
         k+=1
-        time.sleep(180)
  #       p = multiprocessing.Process(name='p',target=firebase1)
  #       p.terminate()
+
   except KeyboardInterrupt:
      GPIO.cleanup()
  # finally:
@@ -120,12 +129,6 @@ def firebase1():
 if __name__ == '__main__':
  p1 = multiprocessing.Process(name='p1',target=metercount)
  p1.start()
-
+ p3 = multiprocessing.Process(name='p3',target=process2)
+ p3.start()
   #      time.sleep(0.2)
-
-
-
-
-
-
-
