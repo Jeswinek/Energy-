@@ -1,0 +1,87 @@
+﻿import datetime
+import RPi.GPIO as GPIO
+import multiprocessing
+import time
+import mysql.connector
+from firebase import firebase
+myconn = mysql.connector.connect(host = "localhost",user = "adminpi",passwd = "#aA12345678",database = "iemcs")
+firebase = firebase.FirebaseApplication("https://energy-meter-project-c13ac.firebaseio.com/",None)
+sensor = 16
+
+k=0
+n=0
+data=0
+m=0
+
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(sensor,GPIO.IN)
+def fb(fire):
+ def fun():
+   return Test()
+ t = fun()
+ kdate = (t.date)
+ ktime = (t.time) 
+ data_unit = {'Unit':fire,'date':kdate,'time':ktime}
+ result = firebase.post('/energy-meter-project-c13ac/meterreading/',data_unit)
+ print(result)
+class Test:
+ def __init__(self):
+  now = datetime.datetime.now()
+  self.date = now.strftime("%Y-%m-%d")
+  self.time = now.strftime("%H:%M:%S")
+
+
+def db(data):
+ def fun():
+   return Test()
+ t = fun()
+ tdate = (t.date)
+ dtime = (t.time)
+ cur=myconn.cursor()
+ sql="insert into Metre(slno,date,time,unit)""values(%s,%s,%s,%s)"
+ val=("1",tdate,dtime,data)
+ try:
+  cur.execute(sql,val)
+  myconn.commit()
+ except:
+  myconn.rollback()
+ print ("record inserted")
+ myconn.close()
+
+print ( "IR Sensor Ready....")
+print (" ")
+
+
+try:
+ while True:
+   if GPIO.input(sensor):
+
+      k+=1
+      print (k)
+      if k>=10:
+        n=n+k
+        print (n)
+        with open("/home/ubuntu/Documents/meter count.txt",'w',encoding = 'utf-8') as f:
+          f.write(str (n))
+        f = open("/home/ubuntu/Documents/meter count.txt",'r',encoding = 'utf-8')
+        data=f.read()
+        f.close()
+        print (data)
+        k=0
+        myconn = mysql.connector.connect(host = "localhost",user = "adminpi",passwd = "#aA12345678",database = "iemcs")
+        db(data)
+        m= int (data)
+      if m%60==0:
+        p1 = multiprocessing.Process(name='p1', target=fb(m))
+        p1.run()
+        m+=5
+#        time.sleep(0.2)
+      while GPIO.input(sensor):
+          time.sleep(0.1)
+ 
+
+
+except KeyboardInterrupt:
+    GPIO.cleanup()
+
+

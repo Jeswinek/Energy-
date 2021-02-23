@@ -1,22 +1,112 @@
 import datetime
 import RPi.GPIO as GPIO
+import Adafruit_ADS1x15
 import multiprocessing
 import time
+import math
+import serial
 import mysql.connector
+adc=Adafruit_ADS1x15.ADS1115()
+GAIN=1
+ser=serial.Serial("/dev/ttyAMA0",9600)
+ser.baudrate=9600
+values=[0]*100
 from firebase import firebase
 #from firebase_admin import db
 myconn = mysql.connector.connect(host = "localhost",user = "adminpi",passwd = "#aA12345678",database = "iemcs")
-firebase = firebase.FirebaseApplication("https://energy-meter-project-c13ac.firebaseio.com/",None)
+firebase = firebase.FirebaseApplication ("https://energy-meter-project-c13ac.firebaseio.com/",None)
 sensor = 16
 
 k=0
 n=0
 data=0
 m=0
+j=0
+t=0
+y=0
+q=0
+p=0
 
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
+GPIO.setup(8,GPIO.IN)
 GPIO.setup(sensor,GPIO.IN)
+def intruder():
+ while True:
+  motion=GPIO.input(8)
+  if motion==0:
+   print ("NO intruders",motion)
+   motion= firebase.put('/Automation','Light1_index',"off")
+  # time.sleep(0.5)
+  elif motion==1:
+   print ("intruder dertected",motion)
+   motion = firebase.put('/Automation','Light1_index',"on")
+  # time.sleep(0.5)
+ #GPIO.output(32,GPIO.HIGH)
+def alrm():
+  p=0
+  while(p<plug):
+   p+=1
+   time.sleep(1)
+  print ("plug is off")
+  result3 = firebase.put('/plugTimer','status',"off")
+  #GPIO.output(32,GPIO.HIGH)
 
+def timm():
+ q=0
+ y=0
+ p=0
+ while True:
+   onoff=firebase.get('/plugTimer','status')
+   if(onoff=="on"):
+     if(y==0):
+      plug=firebase.get('/plugTimer','Plug1')
+      print ("on")
+      print (plug)
+      y+=1
+      q=0
+      alrm()
+     #GPIO.output(32,GPIO.LOW)
+   if(onoff=="off"):
+    if(q==0):
+     print ("timer off")
+     q+=1
+     y==0 
+def ard():
+ while True:
+  read_ser=ser.readline().decode('utf-8').rstrip()
+  print (read_ser)
+  volt = float(read_ser)
+  if(volt<234.5):
+   print ("under voltage")
+def ada():
+ j=0
+ t=0
+ while True:
+  for i in range(100):
+   values[i]=adc.read_adc(0,gain=GAIN)
+  print (max(values))
+
+  if(max(values)>=1):
+   if(j==0):
+    print ("bulb is on")
+    zz="on"
+    fb1(zz)
+    j+=1
+    t=0
+  else:
+   if(t==0):
+    print ("bulb is off")
+    zz="off"
+    fb1(zz)
+    t+=1
+    j=0
+def fb1(fire1):
+# db = firebase.database()
+# result = firebase.set('45')
+ result1 = firebase.put('',"/Automation/Light1_index",fire1)
+ print ("firebase updated")
+ print(result1)
 def fun():
    return Test()
 def fb(fire):
@@ -131,4 +221,12 @@ if __name__ == '__main__':
  p1.start()
  p3 = multiprocessing.Process(name='p3',target=process2)
  p3.start()
+# p4 = multiprocessing.Process(name='p4',target=ada)
+# p4.start()
+ p5 = multiprocessing.Process(name='p5',target=ard)
+ p5.start()
+ p6 = multiprocessing.Process(name='p6',target=timm)
+ p6.start()
+ p7 = multiprocessing.Process(name='p7',target=intruder)
+ p7.start()
   #      time.sleep(0.2)
